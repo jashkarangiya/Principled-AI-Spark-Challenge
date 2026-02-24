@@ -24,6 +24,8 @@ export function CareerDetail() {
   const [isGeneratingDayInLife, setIsGeneratingDayInLife] = useState(false);
   const [ethicalDilemmasData, setEthicalDilemmasData] = useState<any>(null);
   const [isGeneratingEthicalDilemmas, setIsGeneratingEthicalDilemmas] = useState(false);
+  const [skillsData, setSkillsData] = useState<any>(null);
+  const [isResearchingSkills, setIsResearchingSkills] = useState(false);
 
   if (!career) {
     return (
@@ -468,6 +470,133 @@ export function CareerDetail() {
               </div>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Spacer */}
+      <div className="h-[96px]" />
+
+      {/* Skills Needed Section */}
+      <section className="px-[60px]">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="flex items-center justify-between mb-[32px]">
+            <h2 className="font-['Arial:Bold',sans-serif] text-[36px] text-[#191919] leading-[43.2px] tracking-[-1.26px]">
+              Skills needed for this career
+            </h2>
+            <button
+              onClick={async () => {
+                setIsResearchingSkills(true);
+                try {
+                  const response = await fetch(`${API_BASE_URL}/api/research-skills`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_title: career.career_title })
+                  });
+                  if (response.ok) {
+                    const data = await response.json();
+                    setSkillsData(data);
+                  }
+                } catch (error) {
+                  console.error('Failed to research skills');
+                } finally {
+                  setIsResearchingSkills(false);
+                }
+              }}
+              disabled={isResearchingSkills}
+              className="bg-[#8c1d40] hover:bg-[#6d1730] disabled:bg-[#999] text-white rounded-[804px] px-[12px] py-[6px] transition-colors flex items-center gap-[6px] text-[12px] font-['Arial:Bold',sans-serif]"
+            >
+              <Sparkles className="size-[12px]" />
+              {isResearchingSkills ? 'Researching...' : 'Research Skills'}
+            </button>
+          </div>
+
+          {isResearchingSkills ? (
+            <div className="bg-white border border-[#d0d0d0] px-[24px] py-[48px] text-center">
+              <Sparkles className="size-[24px] text-[#8c1d40] animate-pulse mx-auto mb-[12px]" />
+              <p className="font-['Arial:Bold',sans-serif] text-[18px] text-[#8c1d40] mb-[8px]">Researching Skills...</p>
+              <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">Searching job postings, skill databases, and career guides</p>
+            </div>
+          ) : skillsData ? (
+            <div className="space-y-[32px]">
+              <div className="bg-white p-[32px] border-l-4 border-[#8c1d40]">
+                <h3 className="font-['Arial:Bold',sans-serif] text-[24px] text-[#191919] mb-[24px]">Technical Skills</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  {skillsData.skills.technical_skills.map((skill: any, index: number) => (
+                    <div key={index} className="bg-[#f9f9f9] p-[16px]">
+                      <div className="flex items-center justify-between mb-[8px]">
+                        <p className="font-['Arial:Bold',sans-serif] text-[16px] text-[#191919]">{skill.skill}</p>
+                        <span className={`text-[11px] px-[8px] py-[2px] rounded-full font-['Arial:Bold',sans-serif] ${skill.importance === 'Critical' ? 'bg-[#8c1d40] text-white' : skill.importance === 'High' ? 'bg-[#ffc627] text-black' : 'bg-[#d0d0d0] text-[#555]'}`}>{skill.importance}</span>
+                      </div>
+                      <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">{skill.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white p-[32px] border-l-4 border-[#ffc627]">
+                <h3 className="font-['Arial:Bold',sans-serif] text-[24px] text-[#191919] mb-[24px]">Soft Skills</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  {skillsData.skills.soft_skills.map((skill: any, index: number) => (
+                    <div key={index} className="bg-[#f9f9f9] p-[16px]">
+                      <div className="flex items-center justify-between mb-[8px]">
+                        <p className="font-['Arial:Bold',sans-serif] text-[16px] text-[#191919]">{skill.skill}</p>
+                        <span className={`text-[11px] px-[8px] py-[2px] rounded-full font-['Arial:Bold',sans-serif] ${skill.importance === 'Critical' ? 'bg-[#8c1d40] text-white' : skill.importance === 'High' ? 'bg-[#ffc627] text-black' : 'bg-[#d0d0d0] text-[#555]'}`}>{skill.importance}</span>
+                      </div>
+                      <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">{skill.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white p-[32px]">
+                <h3 className="font-['Arial:Bold',sans-serif] text-[24px] text-[#191919] mb-[24px]">Tools & Technologies</h3>
+                <div className="flex flex-wrap gap-[12px]">
+                  {skillsData.skills.tools_technologies.map((tool: any, index: number) => (
+                    <div key={index} className="bg-[#f1f1f1] px-[16px] py-[12px] border-l-2 border-[#8c1d40]">
+                      <p className="font-['Arial:Bold',sans-serif] text-[14px] text-[#191919] mb-[4px]">{tool.name}</p>
+                      <p className="font-['Arial:Regular',sans-serif] text-[12px] text-[#555]">{tool.category} • {tool.proficiency}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white p-[32px] border border-[#d0d0d0]">
+                <h3 className="font-['Arial:Bold',sans-serif] text-[24px] text-[#191919] mb-[24px]">Recommended Certifications</h3>
+                <div className="space-y-[12px]">
+                  {skillsData.skills.certifications.map((cert: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-[16px] bg-[#f9f9f9]">
+                      <div>
+                        <p className="font-['Arial:Bold',sans-serif] text-[16px] text-[#191919]">{cert.name}</p>
+                        <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">{cert.provider}</p>
+                      </div>
+                      <span className={`text-[11px] px-[8px] py-[2px] rounded-full font-['Arial:Bold',sans-serif] ${cert.value === 'High' ? 'bg-[#8c1d40] text-white' : cert.value === 'Medium' ? 'bg-[#ffc627] text-black' : 'bg-[#d0d0d0] text-[#555]'}`}>{cert.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {skillsData.research_sources && (
+                <div className="bg-[#f0f0f0] p-[16px] border border-[#d0d0d0]">
+                  <p className="font-['Arial:Bold',sans-serif] text-[12px] text-[#191919] mb-[8px]">🔍 Real Research Sources</p>
+                  <div className="grid grid-cols-3 gap-[8px]">
+                    <div className="bg-white p-[8px] text-center">
+                      <p className="font-['Arial:Bold',sans-serif] text-[18px] text-[#8c1d40]">{skillsData.research_sources.job_postings}</p>
+                      <p className="font-['Arial:Regular',sans-serif] text-[10px] text-[#555]">Job Postings</p>
+                    </div>
+                    <div className="bg-white p-[8px] text-center">
+                      <p className="font-['Arial:Bold',sans-serif] text-[18px] text-[#8c1d40]">{skillsData.research_sources.skill_databases}</p>
+                      <p className="font-['Arial:Regular',sans-serif] text-[10px] text-[#555]">Skill Databases</p>
+                    </div>
+                    <div className="bg-white p-[8px] text-center">
+                      <p className="font-['Arial:Bold',sans-serif] text-[18px] text-[#8c1d40]">{skillsData.research_sources.career_guides}</p>
+                      <p className="font-['Arial:Regular',sans-serif] text-[10px] text-[#555]">Career Guides</p>
+                    </div>
+                  </div>
+                  <p className="font-['Arial:Regular',sans-serif] text-[11px] text-[#555] mt-[8px]">Generated from {skillsData.research_sources.total_sources} real sources</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white border border-[#d0d0d0] px-[24px] py-[48px] text-center">
+              <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#555] leading-[24px]">Click "Research Skills" to discover the technical skills, soft skills, tools, and certifications needed for this career</p>
+            </div>
+          )}
         </div>
       </section>
 

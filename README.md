@@ -37,26 +37,28 @@ An interactive web application that helps students explore careers and understan
 ## Project Structure
 
 ```
-ai_spark_challenge/
-├── src/                          # Frontend source
-│   ├── app/
-│   │   ├── components/          # React components
-│   │   ├── pages/               # Page components
-│   │   │   ├── CareerList.tsx   # Career browsing page
-│   │   │   └── CareerDetail.tsx # Individual career page
-│   │   └── data/
-│   │       └── careers.ts       # Career data
-│   ├── assets/                  # Images and static files
-│   ├── imports/                 # Figma-generated components
-│   └── styles/                  # CSS files
+Principled-AI-Spark-Challenge/
+├── frontend/                    # React + TypeScript frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/     # React components
+│   │   │   ├── pages/          # Page components
+│   │   │   └── data/           # Career data
+│   │   ├── assets/             # Images
+│   │   ├── imports/            # Figma components
+│   │   └── styles/             # CSS files
+│   ├── package.json
+│   └── vite.config.ts
 ├── backend/                     # FastAPI backend
-│   ├── app.py                   # Main API server
-│   ├── day_in_life_agent.py    # Day-in-life research agent
-│   ├── ethical_dilemmas_agent.py # Ethics research agent
-│   ├── requirements.txt         # Python dependencies
-│   └── .env                     # Environment variables
-├── package.json                 # Node.js dependencies
-└── vite.config.ts              # Vite configuration
+│   ├── app.py                  # Main API server
+│   ├── day_in_life_agent.py    # Day-in-life agent
+│   ├── ethical_dilemmas_agent.py # Ethics agent
+│   ├── skills_research_agent.py  # Skills agent
+│   ├── requirements.txt
+│   └── .env                    # Environment variables
+├── start.sh                    # Unified start script
+├── .gitignore
+└── README.md
 ```
 
 ## Setup Instructions
@@ -66,46 +68,41 @@ ai_spark_challenge/
 - Python 3.8+
 - HuggingFace API token (optional, for AI features)
 
-### 1. Clone and Install
+### Quick Start
 
 ```bash
-cd ai_spark_challenge
+# Clone the repository
+cd Principled-AI-Spark-Challenge
 
-# Install frontend dependencies
-npm install
+# Run the unified start script
+./start.sh
+```
 
-# Install backend dependencies
+The script will:
+1. Install dependencies (if needed)
+2. Start backend on `http://localhost:8000`
+3. Start frontend on `http://localhost:5173`
+
+### Manual Setup
+
+**Backend:**
+```bash
 cd backend
 pip install -r requirements.txt
-```
 
-### 2. Configure Environment
+# Create .env file
+echo "HF_TOKEN=your_token_here" > .env
 
-Create `backend/.env`:
-```bash
-HF_TOKEN=your_huggingface_token_here
-```
-
-**Note**: The app works without HF_TOKEN but uses fallback heuristics instead of AI.
-
-### 3. Run the Application
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
+# Start server
 python app.py
 ```
-Backend runs on `http://localhost:8000`
 
-**Terminal 2 - Frontend:**
+**Frontend:**
 ```bash
+cd frontend
+npm install
 npm run dev
 ```
-Frontend runs on `http://localhost:5173`
-
-### 4. Access the Application
-
-Open your browser to `http://localhost:5173`
 
 ## API Endpoints
 
@@ -169,6 +166,7 @@ Generate AI ethics dilemmas from research
 
 ### Frontend Development
 ```bash
+cd frontend
 npm run dev          # Start dev server
 npm run build        # Build for production
 npm run preview      # Preview production build
@@ -176,6 +174,7 @@ npm run preview      # Preview production build
 
 ### Backend Development
 ```bash
+cd backend
 python app.py        # Run FastAPI server
 ```
 

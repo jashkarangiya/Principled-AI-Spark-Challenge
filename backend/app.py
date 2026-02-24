@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 # Import agents
 from day_in_life_agent import DayInLifeAgent
 from ethical_dilemmas_agent import EthicalDilemmasAgent
+from skills_research_agent import SkillsResearchAgent
 
 load_dotenv()
 
@@ -158,6 +159,7 @@ Return JSON:
 ai_client = AIClient()
 day_in_life_agent = DayInLifeAgent()
 ethical_dilemmas_agent = EthicalDilemmasAgent()
+skills_research_agent = SkillsResearchAgent()
 cache = {}
 
 # Models
@@ -169,6 +171,9 @@ class DayInLifeRequest(BaseModel):
     job_title: str
 
 class EthicalDilemmasRequest(BaseModel):
+    job_title: str
+
+class SkillsResearchRequest(BaseModel):
     job_title: str
 
 # Endpoints
@@ -271,6 +276,18 @@ def generate_ethical_dilemmas(request: EthicalDilemmasRequest):
         return cache[cache_key]
     
     result = ethical_dilemmas_agent.generate(request.job_title)
+    cache[cache_key] = result
+    return result
+
+@app.post("/api/research-skills")
+def research_skills(request: SkillsResearchRequest):
+    """Research required skills from public sources"""
+    cache_key = f"skills:{request.job_title}"
+    
+    if cache_key in cache:
+        return cache[cache_key]
+    
+    result = skills_research_agent.generate(request.job_title)
     cache[cache_key] = result
     return result
 
