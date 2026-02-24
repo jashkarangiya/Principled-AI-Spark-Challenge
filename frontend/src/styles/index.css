@@ -1,0 +1,344 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+:root {
+  --asu-gold: #FFC627;
+  --asu-text: #191919;
+  --asu-muted: #666;
+  --asu-border: #D9D9D9;
+  --asu-bg: #fff;
+  --asu-shadow: 0 10px 25px rgba(0, 0, 0, .12);
+
+  /* fluid spacing + sizing */
+  --container: 90rem;
+  --pad: clamp(.75rem, 2vw, 1.25rem);
+  --gap: clamp(.75rem, 1.6vw, 1.5rem);
+
+  /* underline behaves like ASU highlight bar */
+  --underline-h: .35rem;
+}
+
+/* ===== Utility bar ===== */
+.asu-utilbar {
+  background: #e8e8e8;
+  font-size: 11px;
+}
+
+.asu-utilbar__inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 4px var(--pad);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.asu-utilbar__links {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.asu-utilbar__link {
+  color: var(--asu-text);
+  text-decoration: none;
+}
+
+.asu-utilbar__link:hover {
+  text-decoration: underline;
+}
+
+.asu-utilbar__search {
+  color: var(--asu-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.asu-utilbar__search:hover {
+  background: rgba(0, 0, 0, .06);
+}
+
+/* ===== Header layout ===== */
+.asu-header {
+  background: var(--asu-bg);
+  border-bottom: 1px solid var(--asu-border);
+}
+
+.asu-header__inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: .75rem var(--pad);
+  display: flex;
+  align-items: center;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+/* Brand Logo */
+.asu-logo-link {
+  flex-shrink: 0;
+  display: block;
+}
+
+.asu-logo-img {
+  height: clamp(2.3rem, 3.5vw, 3.8rem);
+  width: auto;
+  display: block;
+}
+
+/* Center Column */
+.asu-header__center {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+/* Brand Name */
+.asu-brand__name {
+  font-size: clamp(1.6rem, 2.2vw, 2.2rem);
+  line-height: 1;
+  font-weight: 800;
+  color: var(--asu-text);
+  text-decoration: none;
+  letter-spacing: .2px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.asu-brand__name:hover {
+  text-decoration: underline;
+}
+
+/* Nav */
+.asu-nav {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: clamp(0.5rem, 1vw, 1.25rem);
+}
+
+/* Home icon */
+.asu-nav__home {
+  text-decoration: none;
+  color: var(--asu-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  border-radius: 999px;
+}
+
+.asu-nav__home:hover {
+  background: rgba(0, 0, 0, .06);
+}
+
+/* Links + Toggles share same styling */
+.asu-nav__link,
+.asu-nav__toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+
+  color: var(--asu-text);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+
+  /* make the clickable area tall enough like ASU */
+  padding-block: .9rem;
+  padding-inline: .1rem;
+
+  /* flex align items */
+  display: inline-flex;
+  align-items: center;
+
+  /* underline highlight bar (NO absolute positioning) */
+  background-image: linear-gradient(var(--asu-gold), var(--asu-gold));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% var(--underline-h);
+  transition: background-size 160ms ease;
+}
+
+.asu-nav__link:hover,
+.asu-nav__toggle:hover,
+.asu-nav__dropdown:hover>.asu-nav__toggle,
+.asu-nav__dropdown:focus-within>.asu-nav__toggle {
+  background-size: 100% var(--underline-h);
+}
+
+.asu-nav__link--active {
+  background-size: 100% var(--underline-h);
+}
+
+/* Dropdown */
+.asu-nav__dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* open state for click/tap */
+.asu-nav__dropdown[data-open="true"] .asu-dropdown {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.asu-nav__dropdown[data-open="true"] .asu-chevron {
+  transform: rotate(-135deg);
+}
+
+.asu-nav__dropdown[data-open="true"]>.asu-nav__toggle {
+  background-size: 100% var(--underline-h);
+}
+
+/* Chevron */
+.asu-chevron {
+  inline-size: .5rem;
+  block-size: .5rem;
+  display: inline-block;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+  margin-inline-start: .25rem;
+}
+
+.asu-nav__dropdown:hover .asu-chevron,
+.asu-nav__dropdown:focus-within .asu-chevron {
+  transform: rotate(-135deg);
+}
+
+.asu-dropdown {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 100%;
+  margin-block-start: .5rem;
+
+  min-inline-size: 14rem;
+  background: #fff;
+  border: 1px solid var(--asu-border);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .12);
+  border-radius: .125rem;
+  padding-block: .35rem;
+  z-index: 20;
+
+  opacity: 0;
+  transform: translateY(-.25rem);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.asu-nav__dropdown:hover .asu-dropdown,
+.asu-nav__dropdown:focus-within .asu-dropdown {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.asu-dropdown a {
+  display: block;
+  padding: .7rem .9rem;
+  text-decoration: none;
+  color: var(--asu-text);
+  font-size: 14px;
+}
+
+.asu-dropdown a:hover {
+  background: rgba(0, 0, 0, .06);
+}
+
+/* CTA buttons */
+.asu-cta {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-shrink: 0;
+}
+
+.asu-btn {
+  text-decoration: none;
+  color: var(--asu-text);
+  background: var(--asu-gold);
+  border: 1px solid transparent;
+  border-radius: 999px;
+
+  padding: .65rem 1.1rem;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.asu-btn:hover {
+  filter: brightness(.96);
+}
+
+.asu-btn.asu-btn--outline {
+  background: transparent;
+  border-color: var(--asu-gold);
+}
+
+.asu-btn.asu-btn--outline:hover {
+  background: rgba(255, 198, 39, .18);
+}
+
+/* RESPONSIVE: stack nav under brand when space is tight */
+@media (max-width: 90rem) {
+  .asu-header__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .asu-header__center {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .asu-cta {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .asu-nav {
+    flex-wrap: wrap;
+    padding-bottom: .25rem;
+  }
+
+  /* hide the utility top bar */
+  .asu-utilbar {
+    display: none;
+  }
+}
+
+/* Small screens: let CTAs take full width (still clean and non-overlapping) */
+@media (max-width: 36rem) {
+  .asu-cta {
+    justify-content: flex-start;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  .asu-dropdown,
+  .asu-chevron,
+  .asu-nav__link::after,
+  .asu-nav__toggle::after {
+    transition: none !important;
+  }
+}

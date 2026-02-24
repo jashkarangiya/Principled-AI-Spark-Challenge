@@ -1,0 +1,86 @@
+[
+    {
+        "id": "data-analyst",
+        "field": "Technology",
+        "title": "Data Analyst",
+        "soc": "15-2051",
+        "subtitle": "Entry-level to Senior",
+        "salary": {
+            "entry": 52000,
+            "median": 103000,
+            "top": 158000
+        },
+        "growthPct": 35,
+        "asuDegreesAvailable": 3
+    },
+    {
+        "id": "ux-designer",
+        "field": "Technology",
+        "title": "UX Designer",
+        "soc": "27-1021",
+        "subtitle": "Entry-level to Lead",
+        "salary": {
+            "entry": 55000,
+            "median": 98000,
+            "top": 151000
+        },
+        "growthPct": 23,
+        "asuDegreesAvailable": 2
+    },
+    {
+        "id": "registered-nurse",
+        "field": "Health & Nursing",
+        "title": "Registered Nurse",
+        "soc": "29-1141",
+        "subtitle": "BSN required",
+        "salary": {
+            "entry": 61000,
+            "median": 89000,
+            "top": 130000
+        },
+        "growthPct": 6,
+        "asuDegreesAvailable": 4
+    },
+    {
+        "id": "financial-analyst",
+        "field": "Business",
+        "title": "Financial Analyst",
+        "soc": "13-2051",
+        "subtitle": "Entry-level to Senior",
+        "salary": {
+            "entry": 50000,
+            "median": 99000,
+            "top": 170000
+        },
+        "growthPct": 9,
+        "asuDegreesAvailable": 3
+    },
+    {
+        "id": "k12-teacher",
+        "field": "Education",
+        "title": "K–12 Teacher",
+        "soc": "25-2031",
+        "subtitle": "State licensure required",
+        "salary": {
+            "entry": 39000,
+            "median": 62000,
+            "top": 98000
+        },
+        "growthPct": 4,
+        "asuDegreesAvailable": 5
+    },
+    {
+        "id": "marketing-manager",
+        "field": "Arts & Media",
+        "title": "Marketing Manager",
+        "soc": "11-2021",
+        "subtitle": "Mid-level to Director",
+        "salary": {
+            "entry": 55000,
+            "median": 140000,
+            "top": 239000
+        },
+        "growthPct": 8,
+        "asuDegreesAvailable": 2
+    }
+]
