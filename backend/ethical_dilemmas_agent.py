@@ -7,7 +7,6 @@ import urllib.parse
 import json
 from typing import Dict, List
 from datetime import datetime
-from huggingface_hub import InferenceClient
 import os
 from dotenv import load_dotenv
 
@@ -18,6 +17,43 @@ class EthicalDilemmasAgent:
     """Agent that researches AI ethics issues for professions"""
     
     def __init__(self):
+        self.service = os.environ.get("AI_SERVICE", "huggingface_api")
+        
+        if self.service == "transformers":
+            self._init_transformers()
+        elif self.service == "nvidia":
+            self._init_nvidia()
+        else:
+            self._init_huggingface_api()
+    
+    def _init_transformers(self):
+        try:
+            from transformers import AutoTokenizer, AutoModelForCausalLM
+            import torch
+            
+            model_name = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.2-3B-Instruct")
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                device_map="auto" if torch.cuda.is_available() else None
+            )
+            self.enabled = True
+        except:
+            self.enabled = False
+    
+    def _init_nvidia(self):
+        token = os.environ.get("NVIDIA_API_KEY")
+        if token:
+            self.nvidia_token = token
+            self.nvidia_model = os.environ.get("NVIDIA_MODEL", "mistralai/mistral-medium-3-instruct")
+            self.enabled = True
+        else:
+            self.enabled = False
+    
+    def _init_huggingface_api(self):
+        from huggingface_hub import InferenceClient
+        
         token = os.environ.get("HF_TOKEN")
         if token:
             self.client = InferenceClient(api_key=token)
@@ -183,13 +219,19 @@ BAD:
 Generate 3 SPECIFIC dilemmas for {job_title}!"""
         
         try:
-            completion = self.client.chat.completions.create(
-                model="deepseek-ai/DeepSeek-R1-0528",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500,
-                temperature=0.7
-            )
-            response = completion.choices[0].message.content
+            if self.service == "transformers":
+                response = self._generate_transformers(prompt, max_tokens=1500)
+            elif self.service == "nvidia":
+                response = self._generate_nvidia(prompt, max_tokens=1500)
+            else:
+                completion = self.client.chat.completions.create(
+                    model="deepseek-ai/DeepSeek-R1-0528",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=1500,
+                    temperature=0.7
+                )
+                response = completion.choices[0].message.content
+            
             start = response.find('{')
             end = response.rfind('}') + 1
             if start != -1 and end > start:
@@ -202,6 +244,35 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
             print(f"  ⚠️  AI error: {e}")
         
         return self._fallback(job_title)
+    
+    def _generate_transformers(self, prompt: str, max_tokens: int = 1500) -> str:
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        if hasattr(self.model, 'device'):
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+        
+        outputs = self.model.generate(
+            **inputs,
+            max_new_tokens=max_tokens,
+            temperature=0.7,
+            do_sample=True
+        )
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    def _generate_nvidia(self, prompt: str, max_tokens: int = 1500) -> str:
+        headers = {
+            "Authorization": f"Bearer {self.nvidia_token}",
+            "Accept": "application/json"
+        }
+        payload = {
+            "model": self.nvidia_model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": 0.7,
+            "stream": False
+        }
+        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions", 
+                                headers=headers, json=payload)
+        return response.json()["choices"][0]["message"]["content"]
     
     def _fallback(self, job_title: str) -> List[Dict]:
         """Job-specific ethical dilemmas"""
