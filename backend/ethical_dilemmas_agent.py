@@ -1,6 +1,7 @@
 """
 Ethical Dilemmas Agent
 Researches real AI ethics issues and generates profession-specific ethical questions
+Uses Tavily for real-time web search context
 """
 import requests
 import urllib.parse
@@ -9,28 +10,29 @@ from typing import Dict, List
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from tavily_search import tavily_client
 
 load_dotenv()
 
 
 class EthicalDilemmasAgent:
     """Agent that researches AI ethics issues for professions"""
-    
+
     def __init__(self):
         self.service = os.environ.get("AI_SERVICE", "huggingface_api")
-        
+
         if self.service == "transformers":
             self._init_transformers()
         elif self.service == "nvidia":
             self._init_nvidia()
         else:
             self._init_huggingface_api()
-    
+
     def _init_transformers(self):
         try:
             from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
-            
+
             model_name = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.2-3B-Instruct")
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = AutoModelForCausalLM.from_pretrained(
@@ -41,7 +43,7 @@ class EthicalDilemmasAgent:
             self.enabled = True
         except:
             self.enabled = False
-    
+
     def _init_nvidia(self):
         token = os.environ.get("NVIDIA_API_KEY")
         if token:
@@ -50,10 +52,10 @@ class EthicalDilemmasAgent:
             self.enabled = True
         else:
             self.enabled = False
-    
+
     def _init_huggingface_api(self):
         from huggingface_hub import InferenceClient
-        
+
         token = os.environ.get("HF_TOKEN")
         if token:
             self.client = InferenceClient(api_key=token)
@@ -61,31 +63,38 @@ class EthicalDilemmasAgent:
         else:
             self.client = None
             self.enabled = False
-    
+
     def generate(self, job_title: str) -> Dict:
         """Generate ethical dilemmas from research"""
         print(f"🔍 Researching AI ethics for: {job_title}")
-        
-        # 1. Search ethics articles
+
+        # Use Tavily for real-time ethics research
+        tavily_results = {}
+        if tavily_client.enabled:
+            print("  📡 Using Tavily for real-time ethics research...")
+            tavily_results = tavily_client.search_ethics(job_title)
+            tavily_source_count = tavily_client.get_source_count(tavily_results)
+            print(f"  ✓ Tavily found {tavily_source_count} ethics sources")
+
+        # Basic searches as supplementary
         ethics_articles = self._search_ethics_articles(job_title)
-        
-        # 2. Search academic papers on AI ethics
         academic_papers = self._search_academic_ethics(job_title)
-        
-        # 3. Search news about AI controversies
         news_articles = self._search_ai_controversies(job_title)
-        
-        total_sources = len(ethics_articles) + len(academic_papers) + len(news_articles)
-        print(f"  📊 Total sources found: {total_sources}")
-        
-        # 4. AI synthesis
+
+        basic_source_count = len(ethics_articles) + len(academic_papers) + len(news_articles)
+        tavily_source_count = tavily_client.get_source_count(tavily_results) if tavily_results else 0
+        total_sources = basic_source_count + tavily_source_count
+        print(f"  📊 Total sources found: {total_sources} ({tavily_source_count} from Tavily)")
+
+        # AI synthesis with real search context
         dilemmas = self._synthesize_with_ai(
             job_title,
             ethics_articles,
             academic_papers,
-            news_articles
+            news_articles,
+            tavily_results
         )
-        
+
         return {
             "job_title": job_title,
             "ethical_dilemmas": dilemmas,
@@ -93,11 +102,13 @@ class EthicalDilemmasAgent:
                 "ethics_articles": len(ethics_articles),
                 "academic_papers": len(academic_papers),
                 "news_articles": len(news_articles),
-                "total_sources": total_sources
+                "tavily_sources": tavily_source_count,
+                "total_sources": total_sources,
+                "tavily_enabled": tavily_client.enabled
             },
             "generated_at": datetime.now().isoformat()
         }
-    
+
     def _search_ethics_articles(self, job_title: str) -> List[Dict]:
         """Search for AI ethics articles"""
         articles = []
@@ -106,14 +117,14 @@ class EthicalDilemmasAgent:
             f"artificial intelligence ethical issues {job_title}",
             f"AI bias {job_title}"
         ]
-        
+
         for query in queries:
             if self._web_search(query, 'ethics'):
                 articles.append({'query': query, 'found': True})
                 print(f"  ✓ Found ethics articles")
-        
+
         return articles
-    
+
     def _search_academic_ethics(self, job_title: str) -> List[Dict]:
         """Search academic papers on AI ethics"""
         papers = []
@@ -131,9 +142,9 @@ class EthicalDilemmasAgent:
                 print(f"  ✓ Found {len(papers)} academic papers")
         except:
             pass
-        
+
         return papers
-    
+
     def _search_ai_controversies(self, job_title: str) -> List[Dict]:
         """Search news about AI controversies"""
         news = []
@@ -141,45 +152,61 @@ class EthicalDilemmasAgent:
             f"AI controversy {job_title} site:techcrunch.com",
             f"artificial intelligence problems {job_title} site:wired.com"
         ]
-        
+
         for query in queries:
             if self._web_search(query, 'AI'):
                 news.append({'query': query, 'found': True})
                 print(f"  ✓ Found AI controversy news")
-        
+
         return news
-    
+
     def _web_search(self, query: str, keyword: str) -> bool:
         """Perform web search"""
         try:
             encoded_query = urllib.parse.quote(query)
             search_url = f"https://lite.duckduckgo.com/lite/?q={encoded_query}"
-            
+
             response = requests.get(search_url, timeout=5, headers={
                 'User-Agent': 'Mozilla/5.0'
             })
-            
+
             return response.status_code == 200 and keyword.lower() in response.text.lower()
         except:
             return False
-    
+
     def _synthesize_with_ai(
         self,
         job_title: str,
         ethics_articles: List[Dict],
         academic_papers: List[Dict],
-        news_articles: List[Dict]
+        news_articles: List[Dict],
+        tavily_results: Dict[str, str] = None
     ) -> List[Dict]:
-        """Use AI to generate ethical dilemmas"""
-        
+        """Use AI to generate ethical dilemmas with real search context"""
+
         if not self.enabled:
             return self._fallback(job_title)
-        
-        total = len(ethics_articles) + len(academic_papers) + len(news_articles)
-        
-        prompt = f"""Based on research about AI ethics in {job_title}:
 
-Sources: {total} articles, papers, and news stories about AI ethics
+        # Build context from Tavily real-time search
+        tavily_context = ""
+        if tavily_results:
+            tavily_context = tavily_client.format_as_context(tavily_results)
+
+        total = len(ethics_articles) + len(academic_papers) + len(news_articles)
+
+        if tavily_context:
+            context = f"""Here is REAL-TIME research data about AI ethics issues for {job_title}:
+
+{tavily_context}
+
+Additionally found {total} other sources (articles, papers, news) about AI ethics in this field.
+
+Use the research data above to generate SPECIFIC, REAL ethical dilemmas based on actual events and issues."""
+        else:
+            context = f"""Based on research about AI ethics in {job_title}:
+Sources: {total} articles, papers, and news stories about AI ethics"""
+
+        prompt = f"""{context}
 
 Generate 3 REAL ethical dilemmas that {job_title} professionals face with AI.
 
@@ -217,7 +244,7 @@ BAD:
 }}
 
 Generate 3 SPECIFIC dilemmas for {job_title}!"""
-        
+
         try:
             if self.service == "transformers":
                 response = self._generate_transformers(prompt, max_tokens=1500)
@@ -231,7 +258,7 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
                     temperature=0.7
                 )
                 response = completion.choices[0].message.content
-            
+
             start = response.find('{')
             end = response.rfind('}') + 1
             if start != -1 and end > start:
@@ -242,14 +269,14 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
                     return dilemmas
         except Exception as e:
             print(f"  ⚠️  AI error: {e}")
-        
+
         return self._fallback(job_title)
-    
+
     def _generate_transformers(self, prompt: str, max_tokens: int = 1500) -> str:
         inputs = self.tokenizer(prompt, return_tensors="pt")
         if hasattr(self.model, 'device'):
             inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
-        
+
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=max_tokens,
@@ -257,7 +284,7 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
             do_sample=True
         )
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
+
     def _generate_nvidia(self, prompt: str, max_tokens: int = 1500) -> str:
         headers = {
             "Authorization": f"Bearer {self.nvidia_token}",
@@ -270,13 +297,13 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
             "temperature": 0.7,
             "stream": False
         }
-        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions", 
+        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions",
                                 headers=headers, json=payload)
         return response.json()["choices"][0]["message"]["content"]
-    
+
     def _fallback(self, job_title: str) -> List[Dict]:
         """Job-specific ethical dilemmas"""
-        
+
         dilemmas_map = {
             "Data Analyst": [
                 {
@@ -330,7 +357,7 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
                 }
             ]
         }
-        
+
         return dilemmas_map.get(job_title, [
             {
                 "title": "AI Ethics in Practice",
@@ -343,10 +370,11 @@ Generate 3 SPECIFIC dilemmas for {job_title}!"""
 if __name__ == "__main__":
     agent = EthicalDilemmasAgent()
     result = agent.generate("Data Analyst")
-    
+
     print("\n📊 Results:")
     print(f"Job: {result['job_title']}")
     print(f"Dilemmas: {len(result['ethical_dilemmas'])}")
+    print(f"Tavily enabled: {result['research_sources']['tavily_enabled']}")
     for d in result['ethical_dilemmas']:
         print(f"\n  • {d['title']}")
         print(f"    {d['question'][:100]}...")

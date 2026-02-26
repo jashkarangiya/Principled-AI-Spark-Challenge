@@ -1,6 +1,7 @@
 """
 Day in the Life Agent
 Agentic module that researches real professionals online to generate authentic daily scenarios
+Uses Tavily for real-time web search context
 """
 import requests
 import urllib.parse
@@ -9,28 +10,29 @@ from typing import Dict, List
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from tavily_search import tavily_client
 
 load_dotenv()
 
 
 class DayInLifeAgent:
     """Agent that researches and generates realistic day-in-life scenarios"""
-    
+
     def __init__(self):
         self.service = os.environ.get("AI_SERVICE", "huggingface_api")
-        
+
         if self.service == "transformers":
             self._init_transformers()
         elif self.service == "nvidia":
             self._init_nvidia()
         else:
             self._init_huggingface_api()
-    
+
     def _init_transformers(self):
         try:
             from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
-            
+
             model_name = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.2-3B-Instruct")
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = AutoModelForCausalLM.from_pretrained(
@@ -41,7 +43,7 @@ class DayInLifeAgent:
             self.enabled = True
         except:
             self.enabled = False
-    
+
     def _init_nvidia(self):
         token = os.environ.get("NVIDIA_API_KEY")
         if token:
@@ -50,10 +52,10 @@ class DayInLifeAgent:
             self.enabled = True
         else:
             self.enabled = False
-    
+
     def _init_huggingface_api(self):
         from huggingface_hub import InferenceClient
-        
+
         token = os.environ.get("HF_TOKEN")
         if token:
             self.client = InferenceClient(api_key=token)
@@ -61,32 +63,38 @@ class DayInLifeAgent:
         else:
             self.client = None
             self.enabled = False
-    
+
     def generate(self, job_title: str) -> Dict:
         """Generate day-in-life from real web research"""
         print(f"🔍 Researching day-in-life for: {job_title}")
-        
-        # 1. Search articles
+
+        # Use Tavily for real-time search if available, fall back to basic search
+        tavily_results = {}
+        if tavily_client.enabled:
+            print("  📡 Using Tavily for real-time search...")
+            tavily_results = tavily_client.search_career_day_in_life(job_title)
+            tavily_source_count = tavily_client.get_source_count(tavily_results)
+            print(f"  ✓ Tavily found {tavily_source_count} sources")
+
+        # Also run basic searches as supplementary sources
         articles = self._search_articles(job_title)
-        
-        # 2. Search Reddit
         reddit_insights = self._search_reddit(job_title)
-        
-        # 3. Search career sites
         career_sites = self._search_career_sites(job_title)
-        
-        total_sources = len(articles) + len(reddit_insights) + len(career_sites)
-        print(f"  📊 Total sources found: {total_sources}")
-        
-        # 4. AI synthesis
+
+        basic_source_count = len(articles) + len(reddit_insights) + len(career_sites)
+        tavily_source_count = tavily_client.get_source_count(tavily_results) if tavily_results else 0
+        total_sources = basic_source_count + tavily_source_count
+        print(f"  📊 Total sources found: {total_sources} ({tavily_source_count} from Tavily)")
+
+        # AI synthesis with real search context
         day_in_life = self._synthesize_with_ai(
             job_title,
             articles,
             reddit_insights,
-            career_sites
+            career_sites,
+            tavily_results
         )
-        
-        # 5. Build response
+
         return {
             "job_title": job_title,
             "morning_tasks": day_in_life.get('morning_tasks', []),
@@ -97,12 +105,14 @@ class DayInLifeAgent:
                 "articles_found": len(articles),
                 "reddit_discussions": len(reddit_insights),
                 "career_sites": len(career_sites),
+                "tavily_sources": tavily_source_count,
                 "total_sources": total_sources,
-                "search_queries_used": 9
+                "tavily_enabled": tavily_client.enabled,
+                "search_queries_used": 9 + (3 if tavily_client.enabled else 0)
             },
             "generated_at": datetime.now().isoformat()
         }
-    
+
     def _search_articles(self, job_title: str) -> List[Dict]:
         """Search for 'day in the life' articles"""
         articles = []
@@ -111,7 +121,7 @@ class DayInLifeAgent:
             f"{job_title} daily routine blog",
             f"what does a {job_title} do every day"
         ]
-        
+
         for query in queries:
             try:
                 if self._web_search(query, job_title):
@@ -119,9 +129,9 @@ class DayInLifeAgent:
                     print(f"  ✓ Found: {query}")
             except:
                 pass
-        
+
         return articles
-    
+
     def _search_reddit(self, job_title: str) -> List[Dict]:
         """Search Reddit for real professional experiences"""
         reddit_insights = []
@@ -129,7 +139,7 @@ class DayInLifeAgent:
             f"{job_title} daily tasks site:reddit.com",
             f"typical day {job_title} site:reddit.com"
         ]
-        
+
         for query in queries:
             try:
                 if self._web_search(query, 'reddit'):
@@ -137,9 +147,9 @@ class DayInLifeAgent:
                     print(f"  ✓ Found Reddit discussions")
             except:
                 pass
-        
+
         return reddit_insights
-    
+
     def _search_career_sites(self, job_title: str) -> List[Dict]:
         """Search career sites for job descriptions"""
         career_sites = []
@@ -148,7 +158,7 @@ class DayInLifeAgent:
             f"{job_title} responsibilities site:glassdoor.com",
             f"{job_title} daily tasks site:linkedin.com"
         ]
-        
+
         for query in queries:
             try:
                 if self._web_search(query, job_title):
@@ -156,50 +166,66 @@ class DayInLifeAgent:
                     print(f"  ✓ Found career site data")
             except:
                 pass
-        
+
         return career_sites
-    
+
     def _web_search(self, query: str, keyword: str) -> bool:
-        """Perform web search using DuckDuckGo"""
+        """Perform web search using DuckDuckGo as fallback"""
         try:
             encoded_query = urllib.parse.quote(query)
             search_url = f"https://lite.duckduckgo.com/lite/?q={encoded_query}"
-            
+
             response = requests.get(search_url, timeout=5, headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             })
-            
+
             if response.status_code == 200:
                 return keyword.lower() in response.text.lower()
         except:
             pass
-        
+
         return False
-    
+
     def _synthesize_with_ai(
         self,
         job_title: str,
         articles: List[Dict],
         reddit_insights: List[Dict],
-        career_sites: List[Dict]
+        career_sites: List[Dict],
+        tavily_results: Dict[str, str] = None
     ) -> Dict:
         """Use AI to synthesize research into realistic scenarios"""
-        
+
         if not self.enabled:
             return self._fallback(job_title)
-        
-        # Build context from sources
+
+        # Build context from Tavily real-time search results
+        tavily_context = ""
+        if tavily_results:
+            tavily_context = tavily_client.format_as_context(tavily_results)
+
         total_sources = len(articles) + len(reddit_insights) + len(career_sites)
-        
-        if total_sources > 0:
+
+        if tavily_context:
+            context = f"""Here is REAL-TIME research data about what {job_title} professionals do daily:
+
+{tavily_context}
+
+Additionally, {total_sources} other web sources were found about {job_title} daily work:
+- {len(articles)} articles about daily work
+- {len(reddit_insights)} Reddit discussions from professionals
+- {len(career_sites)} job descriptions from career sites
+
+Use the research data above to generate ACCURATE, SPECIFIC scenarios."""
+        elif total_sources > 0:
             context = f"""Based on {total_sources} web sources about {job_title}:
 - {len(articles)} articles about daily work
-- {len(reddit_insights)} Reddit discussions from professionals  
+- {len(reddit_insights)} Reddit discussions from professionals
 - {len(career_sites)} job descriptions from career sites"""
         else:
             context = f"""Using your knowledge about {job_title} professionals:
 Generate realistic scenarios based on what you know about this role."""
-        
+
         prompt = f"""{context}
 
 Generate a REALISTIC and SPECIFIC "day in the life" for a {job_title}.
@@ -263,7 +289,7 @@ Return JSON:
 
 Examples of GOOD vs BAD:
 
-BAD: "Review priorities" 
+BAD: "Review priorities"
 GOOD: "Review Jira tickets and prioritize sprint backlog based on stakeholder feedback"
 
 BAD: "Team meeting"
@@ -276,7 +302,7 @@ BAD: "Complex challenges"
 GOOD: "Debug production memory leak in Node.js service using Chrome DevTools and heap snapshots"
 
 Make it AUTHENTIC for {job_title}!"""
-        
+
         try:
             if self.service == "transformers":
                 response = self._generate_transformers(prompt, max_tokens=2000)
@@ -290,55 +316,55 @@ Make it AUTHENTIC for {job_title}!"""
                     temperature=0.7
                 )
                 response = completion.choices[0].message.content
-            
+
             start = response.find('{')
             end = response.rfind('}') + 1
             if start != -1 and end > start:
                 result = json.loads(response[start:end])
-                
+
                 # Validate we got good content
                 if self._validate_quality(result):
                     print(f"  ✓ AI generated realistic scenarios")
                     return result
                 else:
                     print(f"  ⚠️  AI output too generic, retrying...")
-                    # Retry with more explicit prompt
-                    return self._retry_with_better_prompt(job_title)
+                    return self._retry_with_better_prompt(job_title, tavily_context)
         except Exception as e:
             print(f"  ⚠️  AI error: {e}")
-        
+
         return self._fallback(job_title)
-    
+
     def _validate_quality(self, result: Dict) -> bool:
         """Check if AI output is specific enough"""
-        # Check for generic phrases that indicate low quality
         generic_phrases = [
             'start day', 'review priorities', 'team meeting', 'core work',
             'wrap up', 'complex challenges', 'collaborate with colleagues',
             'focus on main responsibilities'
         ]
-        
-        # Check morning tasks
+
         for task in result.get('morning_tasks', []):
             task_lower = task.get('task', '').lower()
             if any(phrase in task_lower for phrase in generic_phrases):
                 return False
-        
-        # Check afternoon tasks
+
         for task in result.get('afternoon_tasks', []):
             task_lower = task.get('task', '').lower()
             if any(phrase in task_lower for phrase in generic_phrases):
                 return False
-        
-        return True
-    
-    def _retry_with_better_prompt(self, job_title: str) -> Dict:
-        """Retry with even more explicit prompt"""
-        prompt = f"""You are an expert {job_title}. Describe YOUR typical workday with SPECIFIC details.
 
+        return True
+
+    def _retry_with_better_prompt(self, job_title: str, tavily_context: str = "") -> Dict:
+        """Retry with even more explicit prompt"""
+        extra_context = ""
+        if tavily_context:
+            extra_context = f"\nHere is real research data to base your answer on:\n{tavily_context}\n"
+
+        prompt = f"""You are an expert {job_title}. Describe YOUR typical workday with SPECIFIC details.
+{extra_context}
 DO NOT use generic phrases like:
 - "Review priorities"
-- "Team meeting" 
+- "Team meeting"
 - "Core work"
 - "Complex challenges"
 
@@ -350,7 +376,7 @@ INSTEAD use SPECIFIC examples like:
 
 Return JSON with morning_tasks, afternoon_tasks, real_problems, key_skills_used.
 Be SPECIFIC and REALISTIC for {job_title}!"""
-        
+
         try:
             if self.service == "transformers":
                 response = self._generate_transformers(prompt, max_tokens=2000)
@@ -364,21 +390,21 @@ Be SPECIFIC and REALISTIC for {job_title}!"""
                     temperature=0.8
                 )
                 response = completion.choices[0].message.content
-            
+
             start = response.find('{')
             end = response.rfind('}') + 1
             if start != -1 and end > start:
                 return json.loads(response[start:end])
         except:
             pass
-        
+
         return self._fallback(job_title)
-    
+
     def _generate_transformers(self, prompt: str, max_tokens: int = 2000) -> str:
         inputs = self.tokenizer(prompt, return_tensors="pt")
         if hasattr(self.model, 'device'):
             inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
-        
+
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=max_tokens,
@@ -386,7 +412,7 @@ Be SPECIFIC and REALISTIC for {job_title}!"""
             do_sample=True
         )
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
+
     def _generate_nvidia(self, prompt: str, max_tokens: int = 2000) -> str:
         headers = {
             "Authorization": f"Bearer {self.nvidia_token}",
@@ -399,14 +425,13 @@ Be SPECIFIC and REALISTIC for {job_title}!"""
             "temperature": 0.7,
             "stream": False
         }
-        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions", 
+        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions",
                                 headers=headers, json=payload)
         return response.json()["choices"][0]["message"]["content"]
-    
+
     def _fallback(self, job_title: str) -> Dict:
         """Job-specific fallback with realistic examples"""
-        
-        # Job-specific realistic scenarios
+
         job_scenarios = {
             "Data Analyst": {
                 'morning_tasks': [
@@ -454,8 +479,7 @@ Be SPECIFIC and REALISTIC for {job_title}!"""
                 'key_skills_used': ['Figma', 'User Research', 'Prototyping', 'Usability Testing', 'Communication']
             }
         }
-        
-        # Return job-specific scenario or generic one
+
         return job_scenarios.get(job_title, {
             'morning_tasks': [
                 {'time': '9:00 AM', 'task': f'Review {job_title} priorities', 'description': 'Check emails, review task list, plan day', 'type': 'routine'},
@@ -476,10 +500,11 @@ Be SPECIFIC and REALISTIC for {job_title}!"""
 if __name__ == "__main__":
     agent = DayInLifeAgent()
     result = agent.generate("Data Analyst")
-    
+
     print("\n📊 Results:")
     print(f"Job: {result['job_title']}")
     print(f"Morning tasks: {len(result['morning_tasks'])}")
     print(f"Afternoon tasks: {len(result['afternoon_tasks'])}")
     print(f"Real problems: {len(result['real_problems'])}")
     print(f"Sources: {result['research_sources']['total_sources']}")
+    print(f"Tavily enabled: {result['research_sources']['tavily_enabled']}")

@@ -12,10 +12,11 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-# Import agents
+# Import agents and Tavily search
 from day_in_life_agent import DayInLifeAgent
 from ethical_dilemmas_agent import EthicalDilemmasAgent
 from skills_research_agent import SkillsResearchAgent
+from tavily_search import tavily_client
 
 load_dotenv()
 
@@ -33,22 +34,22 @@ app.add_middleware(
 class AIClient:
     def __init__(self):
         self.service = os.environ.get("AI_SERVICE", "huggingface_api")
-        
+
         if self.service == "transformers":
             self._init_transformers()
         elif self.service == "nvidia":
             self._init_nvidia()
         else:
             self._init_huggingface_api()
-    
+
     def _init_transformers(self):
         try:
             from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
-            
+
             model_name = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.2-3B-Instruct")
             print(f"Loading model: {model_name}")
-            
+
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -60,7 +61,7 @@ class AIClient:
         except Exception as e:
             print(f"⚠️  Transformers init failed: {e}")
             self.enabled = False
-    
+
     def _init_nvidia(self):
         token = os.environ.get("NVIDIA_API_KEY")
         if token:
@@ -71,10 +72,10 @@ class AIClient:
         else:
             self.enabled = False
             print("⚠️  NVIDIA API disabled (no NVIDIA_API_KEY)")
-    
+
     def _init_huggingface_api(self):
         from huggingface_hub import InferenceClient
-        
+
         token = os.environ.get("HF_TOKEN")
         if token:
             self.client = InferenceClient(api_key=token)
@@ -84,22 +85,33 @@ class AIClient:
             self.client = None
             self.enabled = False
             print("⚠️  HuggingFace API disabled (no HF_TOKEN)")
-    
-    def analyze(self, job_title: str, ai_tools: List[str]) -> dict:
+
+    def analyze(self, job_title: str, ai_tools: List[str], search_context: str = "") -> dict:
         if not self.enabled:
             return self._fallback(job_title, ai_tools)
-        
-        prompt = f"""Analyze automation risk for {job_title}.
-AI tools: {', '.join(ai_tools) if ai_tools else 'None'}
+
+        # Build prompt with real-time search context if available
+        context_section = ""
+        if search_context:
+            context_section = f"""Here is REAL-TIME research data about AI automation for {job_title}:
+
+{search_context}
+
+Use this research data to provide an ACCURATE, DATA-DRIVEN analysis."""
+
+        prompt = f"""{context_section}
+
+Analyze automation risk for {job_title}.
+AI tools currently used: {', '.join(ai_tools) if ai_tools else 'None identified'}
 
 Return JSON:
 {{
   "risk_score": <0-100>,
-  "explanation": "<detailed explanation>",
+  "explanation": "<detailed explanation based on research data>",
   "tasks_at_risk": ["task1", "task2"],
   "tasks_safe": ["task1", "task2"]
 }}"""
-        
+
         try:
             if self.service == "transformers":
                 response = self._generate_transformers(prompt, max_tokens=800)
@@ -112,21 +124,21 @@ Return JSON:
                     max_tokens=800
                 )
                 response = completion.choices[0].message.content
-            
+
             start = response.find('{')
             end = response.rfind('}') + 1
             if start != -1 and end > start:
                 return json.loads(response[start:end])
         except:
             pass
-        
+
         return self._fallback(job_title, ai_tools)
-    
+
     def _generate_transformers(self, prompt: str, max_tokens: int = 800) -> str:
         inputs = self.tokenizer(prompt, return_tensors="pt")
         if hasattr(self.model, 'device'):
             inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
-        
+
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=max_tokens,
@@ -134,7 +146,7 @@ Return JSON:
             do_sample=True
         )
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
+
     def _generate_nvidia(self, prompt: str, max_tokens: int = 800) -> str:
         headers = {
             "Authorization": f"Bearer {self.nvidia_token}",
@@ -147,10 +159,10 @@ Return JSON:
             "temperature": 0.7,
             "stream": False
         }
-        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions", 
+        response = requests.post("https://integrate.api.nvidia.com/v1/chat/completions",
                                 headers=headers, json=payload)
         return response.json()["choices"][0]["message"]["content"]
-    
+
     def _fallback(self, job_title: str, ai_tools: List[str]) -> dict:
         risk = 30 + min(len(ai_tools) * 5, 30)
         return {
@@ -183,7 +195,11 @@ class SkillsResearchRequest(BaseModel):
 # Endpoints
 @app.get("/")
 def root():
-    return {"message": "Career Explorer API", "ai_enabled": ai_client.enabled}
+    return {
+        "message": "Career Explorer API",
+        "ai_enabled": ai_client.enabled,
+        "tavily_enabled": tavily_client.enabled
+    }
 
 @app.get("/api/cards")
 def get_cards(career_slug: str, section_slug: str, session: Session = Depends(get_session)):
@@ -212,10 +228,21 @@ def get_cards(career_slug: str, section_slug: str, session: Session = Depends(ge
 @app.post("/api/calculate-automation-risk")
 def calculate_risk(request: AutomationRiskRequest):
     cache_key = f"{request.job_title}:{request.job_description}"
-    
+
     if cache_key in cache:
         return cache[cache_key]
-    
+
+    # Use Tavily for real-time automation risk research
+    tavily_results = {}
+    tavily_context = ""
+    tavily_source_count = 0
+    if tavily_client.enabled:
+        print(f"📡 Using Tavily for automation risk research: {request.job_title}")
+        tavily_results = tavily_client.search_automation_risk(request.job_title)
+        tavily_source_count = tavily_client.get_source_count(tavily_results)
+        tavily_context = tavily_client.format_as_context(tavily_results)
+        print(f"  ✓ Tavily found {tavily_source_count} automation risk sources")
+
     # Search papers
     papers = []
     try:
@@ -230,7 +257,7 @@ def calculate_risk(request: AutomationRiskRequest):
             papers = response.json().get('data', [])
     except:
         pass
-    
+
     # Identify AI tools
     tool_map = {
         "Data Analyst": ["ChatGPT", "Tableau AI", "Power BI AI"],
@@ -241,10 +268,10 @@ def calculate_risk(request: AutomationRiskRequest):
         "Marketing Manager": ["Jasper", "Copy.ai", "HubSpot AI"],
     }
     ai_tools = tool_map.get(request.job_title, [])
-    
-    # AI analysis
-    analysis = ai_client.analyze(request.job_title, ai_tools)
-    
+
+    # AI analysis with Tavily search context
+    analysis = ai_client.analyze(request.job_title, ai_tools, search_context=tavily_context)
+
     # Calculate transparency breakdown
     breakdown = {
         "research_papers": {
@@ -264,22 +291,31 @@ def calculate_risk(request: AutomationRiskRequest):
             "service": ai_client.service,
             "contribution": 40,
             "description": "AI-powered task analysis"
+        },
+        "real_time_search": {
+            "enabled": tavily_client.enabled,
+            "source_count": tavily_source_count,
+            "contribution": min(tavily_source_count * 3, 20),
+            "description": "Real-time web search via Tavily for current AI automation data"
         }
     }
-    
+
+    total_sources = len(papers) + tavily_source_count
+
     result = {
         "job_title": request.job_title,
         "risk_percentage": analysis['risk_score'],
-        "confidence_score": 0.8 if papers else 0.3,
+        "confidence_score": 0.9 if (papers and tavily_source_count > 0) else 0.8 if papers else 0.5 if tavily_source_count > 0 else 0.3,
         "explanation": analysis['explanation'],
         "ai_tools_identified": ai_tools,
         "tasks_at_risk": analysis['tasks_at_risk'],
         "tasks_safe": analysis['tasks_safe'],
-        "research_sources_count": len(papers),
+        "research_sources_count": total_sources,
+        "tavily_enabled": tavily_client.enabled,
         "calculation_breakdown": breakdown,
         "calculated_at": datetime.now().isoformat()
     }
-    
+
     cache[cache_key] = result
     return result
 
@@ -287,10 +323,10 @@ def calculate_risk(request: AutomationRiskRequest):
 def generate_day_in_life(request: DayInLifeRequest):
     """Generate realistic day-in-life scenarios from online research"""
     cache_key = f"day_in_life:{request.job_title}"
-    
+
     if cache_key in cache:
         return cache[cache_key]
-    
+
     result = day_in_life_agent.generate(request.job_title)
     cache[cache_key] = result
     return result
@@ -299,10 +335,10 @@ def generate_day_in_life(request: DayInLifeRequest):
 def generate_ethical_dilemmas(request: EthicalDilemmasRequest):
     """Generate AI ethics dilemmas from research"""
     cache_key = f"ethical_dilemmas:{request.job_title}"
-    
+
     if cache_key in cache:
         return cache[cache_key]
-    
+
     result = ethical_dilemmas_agent.generate(request.job_title)
     cache[cache_key] = result
     return result
@@ -311,10 +347,10 @@ def generate_ethical_dilemmas(request: EthicalDilemmasRequest):
 def research_skills(request: SkillsResearchRequest):
     """Research required skills from public sources"""
     cache_key = f"skills:{request.job_title}"
-    
+
     if cache_key in cache:
         return cache[cache_key]
-    
+
     result = skills_research_agent.generate(request.job_title)
     cache[cache_key] = result
     return result
@@ -322,4 +358,5 @@ def research_skills(request: SkillsResearchRequest):
 if __name__ == "__main__":
     import uvicorn
     print("✓ AI enabled" if ai_client.enabled else "⚠️  AI disabled (no HF_TOKEN)")
+    print("✓ Tavily search enabled" if tavily_client.enabled else "⚠️  Tavily search disabled (no TAVILY_API_KEY)")
     uvicorn.run(app, host="0.0.0.0", port=8000)
