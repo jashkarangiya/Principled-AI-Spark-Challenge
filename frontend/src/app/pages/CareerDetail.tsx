@@ -11,7 +11,7 @@ import imgExperiencesHero from "../../assets/cfc8f873b14b01fec8391ecc6f3d56b991c
 import imgSectionProgramCourses from "../../assets/246706e29030f783e2d25b7656d4d29484ca9389.png";
 import { useState } from "react";
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:8000';
 
 export function CareerDetail() {
   const { slug } = useParams();
@@ -34,7 +34,7 @@ export function CareerDetail() {
           Career not found
         </h1>
         <Link to="/" className="text-[#8C1D40] underline">
-           Back to all careers
+          Back to all careers
         </Link>
       </div>
     );
@@ -66,8 +66,8 @@ export function CareerDetail() {
             <div className="max-w-[1200px] mx-auto">
               <div className="bg-white px-[47px] py-[32px]">
                 {/* Back to Career Search */}
-                <Link 
-                  to="/" 
+                <Link
+                  to="/"
                   className="font-['Arial:Regular',sans-serif] text-[14px] text-[#8c1d40] hover:underline mb-[12px] inline-block"
                 >
                   ← Back to career search
@@ -121,89 +121,23 @@ export function CareerDetail() {
                 </button>
               </div>
               
-              {/* Show AI-generated day if available */}
+              {/* Show AI-generated activities if available */}
               {dayInLifeData ? (
                 <div className="space-y-[24px]">
-                  {/* Morning Tasks */}
-                  <div>
-                    <div className="bg-[#ffc627] px-[12px] py-[4px] inline-block mb-[12px]">
-                      <p className="font-['Arial:Bold',sans-serif] text-[14px] text-[#191919]">
-                        Morning
-                      </p>
-                    </div>
-                    <div className="space-y-[12px]">
-                      {dayInLifeData.morning_tasks.map((task: any, index: number) => (
-                        <div key={index} className="flex gap-[12px] items-start bg-[#f9f9f9] p-[16px] border-l-4 border-[#ffc627]">
-                          <div className="shrink-0">
-                            <p className="font-['Arial:Bold',sans-serif] text-[14px] text-[#8c1d40]">
-                              {task.time}
-                            </p>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-['Arial:Bold',sans-serif] text-[16px] text-[#191919] mb-[4px]">
-                              {task.task}
-                            </p>
-                            <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">
-                              {task.description}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Afternoon Tasks */}
-                  <div>
-                    <div className="bg-[#8c1d40] px-[12px] py-[4px] inline-block mb-[12px]">
-                      <p className="font-['Arial:Bold',sans-serif] text-[14px] text-white">
-                        Afternoon
-                      </p>
-                    </div>
-                    <div className="space-y-[12px]">
-                      {dayInLifeData.afternoon_tasks.map((task: any, index: number) => (
-                        <div key={index} className="flex gap-[12px] items-start bg-[#f9f9f9] p-[16px] border-l-4 border-[#8c1d40]">
-                          <div className="shrink-0">
-                            <p className="font-['Arial:Bold',sans-serif] text-[14px] text-[#8c1d40]">
-                              {task.time}
-                            </p>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-['Arial:Bold',sans-serif] text-[16px] text-[#191919] mb-[4px]">
-                              {task.task}
-                            </p>
-                            <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">
-                              {task.description}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Real Problems */}
-                  <div>
-                    <div className="bg-[#191919] px-[12px] py-[4px] inline-block mb-[12px]">
-                      <p className="font-['Arial:Bold',sans-serif] text-[14px] text-white">
-                        Real Problems You'll Solve
-                      </p>
-                    </div>
-                    <div className="space-y-[12px]">
-                      {dayInLifeData.real_problems.map((problem: any, index: number) => (
-                        <div key={index} className="bg-[#fff5e6] p-[16px] border-l-4 border-[#ff9800]">
-                          <div className="flex items-start justify-between mb-[8px]">
-                            <p className="font-['Arial:Bold',sans-serif] text-[16px] text-[#191919]">
-                              {problem.problem}
-                            </p>
-                            <span className="bg-[#ff9800] text-white text-[11px] px-[8px] py-[2px] rounded-full font-['Arial:Bold',sans-serif]">
-                              {problem.frequency}
-                            </span>
-                          </div>
-                          <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555]">
-                            {problem.description}
+                  {/* Activity Bullet Points */}
+                  <div className="space-y-[16px] px-[24px]">
+                    {dayInLifeData.activities.map((activity: string, index: number) => (
+                      <div key={index} className="flex gap-[12px] items-start">
+                        <div className="bg-[#ffc627] rounded-full size-[24px] flex items-center justify-center shrink-0">
+                          <p className="font-['Arial:Bold',sans-serif] text-[14px] text-[#191919] leading-[21px]">
+                            {index + 1}
                           </p>
                         </div>
-                      ))}
-                    </div>
+                        <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#191919] leading-[24px] flex-1">
+                          {activity}
+                        </p>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Research Sources */}
@@ -303,7 +237,7 @@ export function CareerDetail() {
                 {/* Salary Details */}
                 <div className="space-y-[8px]">
                   <div className="h-px bg-[#d0d0d0]" />
-                  
+
                   {/* Entry Level */}
                   <div className="flex items-center justify-between py-[8px]">
                     <div className="flex items-center gap-[8px]">
@@ -393,7 +327,7 @@ export function CareerDetail() {
                 {/* Left: Image */}
                 <div className="w-[292px] shrink-0 relative">
                   <div className="h-full absolute inset-0 overflow-hidden">
-                    <img 
+                    <img
                       alt={degree.name}
                       className="absolute h-full left-0 max-w-none top-0 w-[167.53%] object-cover"
                       src={degree.image_url}
@@ -441,7 +375,7 @@ export function CareerDetail() {
 
                   {/* CTA Button */}
                   <div className="border-t border-[#d0d0d0] pt-[24px]">
-                    <a 
+                    <a
                       href={degree.url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -462,8 +396,8 @@ export function CareerDetail() {
                   onClick={() => setShowAllDegrees(!showAllDegrees)}
                   className="font-['Arial:Regular',sans-serif] text-[16px] text-[#8c1d40] leading-[24px] underline hover:text-[#6d1730] transition-colors"
                 >
-                  {showAllDegrees 
-                    ? 'Show Less' 
+                  {showAllDegrees
+                    ? 'Show Less'
                     : `View ${remainingDegreeCount} more degree${remainingDegreeCount === 1 ? '' : 's'}`
                   }
                 </button>
@@ -610,7 +544,7 @@ export function CareerDetail() {
           <div className="relative h-[550px] -mt-[64px] overflow-hidden">
             {/* Hero Image */}
             <div className="absolute inset-0">
-              <img 
+              <img
                 alt="ASU students collaborating"
                 className="absolute h-[131.82%] left-0 max-w-none top-0 w-full object-cover"
                 src={imgExperiencesHero}
@@ -631,7 +565,7 @@ export function CareerDetail() {
             <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#191919] leading-[24px] mb-[24px]">
               ASU offers many resources and experiential opportunities to help you reach your career goals beyond just the degree.
             </p>
-            
+
             {/* View more career resources link */}
             <div className="mb-[32px]">
               <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#8c1d40] leading-[24px]">
@@ -666,7 +600,7 @@ export function CareerDetail() {
                 // Map experiences to unique photo types
                 const getExperienceImageUrl = (title: string, icon: string) => {
                   const titleLower = title.toLowerCase();
-                  
+
                   // Match by keywords in title
                   if (titleLower.includes('internship') || titleLower.includes('student externship')) {
                     return 'https://images.unsplash.com/photo-1758518731706-be5d5230e5a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMG1lZXRpbmclMjBkaXNjdXNzaW9uJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
@@ -713,7 +647,7 @@ export function CareerDetail() {
                   if (titleLower.includes('practicum') || titleLower.includes('placement')) {
                     return 'https://images.unsplash.com/photo-1758270704925-fa59d93119c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjbGFzc3Jvb20lMjB0ZWFjaGluZyUyMGVkdWNhdGlvbiUyMHN0dWRlbnRzfGVufDF8fHx8MTc3MTgyODIwMXww&ixlib=rb-4.1.0&q=80&w=1080';
                   }
-                  
+
                   // Default fallback based on icon type
                   if (icon === 'users' || icon === 'shield') {
                     return 'https://images.unsplash.com/photo-1543269865-cbf427effbad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHVkZW50cyUyMGNvbGxhYm9yYXRpb24lMjB0ZWFtJTIwcHJvamVjdHxlbnwxfHx8fDE3NzE4MjgxOTd8MA&ixlib=rb-4.1.0&q=80&w=1080';
@@ -724,7 +658,7 @@ export function CareerDetail() {
                   if (icon === 'briefcase' || icon === 'globe') {
                     return 'https://images.unsplash.com/photo-1758518731706-be5d5230e5a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMG1lZXRpbmclMjBkaXNjdXNzaW9uJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
                   }
-                  
+
                   // Final fallback
                   return 'https://images.unsplash.com/photo-1769798643237-8642a3fbe5bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25mZXJlbmNlJTIwbmV0d29ya2luZyUyMHBlb3BsZSUyMHByb2Zlc3Npb25hbHxlbnwxfHx8fDE3NzE4MjgyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080';
                 };
@@ -737,12 +671,12 @@ export function CareerDetail() {
                     {/* Image with Badge - NO fade overlay on cards */}
                     <div className="relative h-[186px] overflow-hidden shrink-0">
                       {/* Base Image */}
-                      <img 
+                      <img
                         alt={experience.title}
                         className="absolute inset-0 size-full object-cover"
                         src={imageUrl}
                       />
-                      
+
                       {/* Badge - Rectangular (no border-radius) */}
                       <div className="absolute top-[11px] right-[11px] bg-black px-[12px] pt-[8px] pb-[8px] z-10">
                         <p className="font-['Arial:Bold',sans-serif] text-[12px] text-white tracking-[-0.45px] leading-[21.6px] whitespace-nowrap">
@@ -854,7 +788,7 @@ export function CareerDetail() {
               <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,198,39,0.3)] p-[24px] mb-[48px] max-w-[1024px]">
                 <h4 className="font-['Arial:Bold',sans-serif] text-[16px] text-[#ffc627] leading-[24px] mb-[16px] flex items-center gap-[8px]">
                   <svg className="size-[16px]" fill="none" viewBox="0 0 16 16">
-                    <path d="M8 1v14M1 8h14" stroke="#ffc627" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M8 1v14M1 8h14" stroke="#ffc627" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                   How we calculated this score
                 </h4>
@@ -871,7 +805,7 @@ export function CareerDetail() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* AI Tools */}
                   <div className="flex items-start gap-[12px]">
                     <div className="bg-[#ffc627] rounded-full size-[6px] mt-[8px] shrink-0" />
@@ -887,7 +821,7 @@ export function CareerDetail() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* AI Analysis */}
                   <div className="flex items-start gap-[12px]">
                     <div className="bg-[#ffc627] rounded-full size-[6px] mt-[8px] shrink-0" />
@@ -909,7 +843,7 @@ export function CareerDetail() {
               <h3 className="font-['Arial:Bold',sans-serif] text-[24px] text-white leading-[36px] tracking-[-0.6px] mb-[24px]">
                 How AI is used in this field today
               </h3>
-              
+
               {/* 2x2 Grid with numbered items */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
                 {career.ai_uses_today.map((use, index) => (
@@ -959,7 +893,7 @@ export function CareerDetail() {
                   {isGeneratingEthicalDilemmas ? 'Researching...' : 'Generate Real Dilemmas'}
                 </button>
               </div>
-              
+
               {isGeneratingEthicalDilemmas ? (
                 <div className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,198,39,0.3)] px-[24px] py-[48px] text-center">
                   <div className="flex items-center justify-center gap-[12px] mb-[12px]">
@@ -992,7 +926,7 @@ export function CareerDetail() {
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Research Sources */}
                   {ethicalDilemmasData.research_sources && (
                     <div className="bg-[rgba(255,198,39,0.1)] border border-[rgba(255,198,39,0.3)] p-[16px] mt-[24px]">
@@ -1066,9 +1000,9 @@ export function CareerDetail() {
                 >
                   {/* Image */}
                   <div className="h-[180px] relative">
-                    <img 
+                    <img
                       alt={related.title}
-                      className="absolute inset-0 size-full object-cover" 
+                      className="absolute inset-0 size-full object-cover"
                       src={relatedCareer.image_url}
                     />
                   </div>
@@ -1080,10 +1014,10 @@ export function CareerDetail() {
                       <h3 className="font-['Arial:Bold',sans-serif] text-[18px] text-[#191919] tracking-[-0.4px] leading-[19.2px]">
                         {related.title}
                       </h3>
-                      
+
                       {/* Yellow underline */}
                       <div className="bg-[#ffc627] h-[2px] w-[34.56px]" />
-                      
+
                       {/* Growth and Salary */}
                       <div className="pt-[7px] space-y-[4px]">
                         {/* Growth */}
@@ -1096,7 +1030,7 @@ export function CareerDetail() {
                             {relatedCareer.growth_rate}
                           </p>
                         </div>
-                        
+
                         {/* Salary */}
                         <div className="flex items-start gap-[8px]">
                           <div className="flex gap-0 mt-[2px]">
@@ -1155,11 +1089,11 @@ export function CareerDetail() {
       {/* CTA Section - Light background with pattern */}
       <section className="relative bg-white h-[296px] overflow-hidden">
         {/* Background Pattern */}
-        <div 
-          className="absolute inset-0 bg-repeat-x bg-[length:450px_451px] bg-[top_left]" 
+        <div
+          className="absolute inset-0 bg-repeat-x bg-[length:450px_451px] bg-[top_left]"
           style={{ backgroundImage: `url('${imgSectionProgramCourses}')` }}
         />
-        
+
         {/* Content - Centered */}
         <div className="relative px-[60px] h-full flex flex-col items-center justify-center">
           <div className="max-w-[1080px] w-full text-center">
@@ -1167,12 +1101,12 @@ export function CareerDetail() {
             <h2 className="font-['Arial:Bold',sans-serif] text-[36px] text-[#191919] leading-[43.2px] tracking-[-1.26px] mb-[16px]">
               Ready to start your journey?
             </h2>
-            
+
             {/* Paragraph */}
             <p className="font-['Arial:Regular',sans-serif] text-[18px] text-[#191919] leading-[25.2px] mb-[32px]">
               Explore {career.asu_degree_count} ASU Online degree{career.asu_degree_count !== 1 ? 's' : ''} that can prepare you for a career as a {career.career_title}.
             </p>
-            
+
             {/* Buttons */}
             <div className="flex items-center justify-center gap-[16px]">
               <button className="bg-[#ffc627] rounded-[26843500px] px-[32px] h-[52px] hover:bg-[#ffb600] transition-colors">
