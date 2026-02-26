@@ -8,7 +8,7 @@ echo ""
 if [ ! -d "backend/__pycache__" ]; then
     echo "📦 Installing backend dependencies..."
     cd backend
-    pip install -r requirements.txt > /dev/null 2>&1
+    pip3 install -r requirements.txt > /dev/null 2>&1
     cd ..
 fi
 
@@ -26,7 +26,7 @@ echo ""
 # Start backend in background
 echo "🔧 Starting backend server on http://localhost:8000..."
 cd backend
-python app.py > /dev/null 2>&1 &
+python3 app.py > /dev/null 2>&1 &
 BACKEND_PID=$!
 cd ..
 

@@ -1,7 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
+from fastapi import Depends
+from sqlmodel import Session, select
+from models import Career, Section, Card
+from db import get_session
 import os
 import json
 from datetime import datetime
@@ -180,6 +184,30 @@ class SkillsResearchRequest(BaseModel):
 @app.get("/")
 def root():
     return {"message": "Career Explorer API", "ai_enabled": ai_client.enabled}
+
+@app.get("/api/cards")
+def get_cards(career_slug: str, section_slug: str, session: Session = Depends(get_session)):
+    """Fetch cards for a specific career and section"""
+    # 1. Find Career
+    career = session.exec(select(Career).where(Career.slug == career_slug)).first()
+    if not career:
+        raise HTTPException(status_code=404, detail="Career not found")
+        
+    # 2. Find Section
+    section = session.exec(select(Section).where(Section.slug == section_slug)).first()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+        
+    # 3. Get Cards
+    cards = session.exec(
+        select(Card)
+        .where(Card.career_id == career.id)
+        .where(Card.section_id == section.id)
+        .where(Card.is_active == True)
+        .order_by(Card.sort_order)
+    ).all()
+    
+    return cards
 
 @app.post("/api/calculate-automation-risk")
 def calculate_risk(request: AutomationRiskRequest):
