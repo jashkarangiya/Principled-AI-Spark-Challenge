@@ -6,3 +6,5 @@ requests
 huggingface-hub
 transformers
 torch
+
+sqlmodel
