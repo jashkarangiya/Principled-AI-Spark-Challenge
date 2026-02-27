@@ -4,12 +4,11 @@ import { Sparkles } from 'lucide-react';
 import svgPaths from '../../imports/svg-xsbaq11fpv';
 import svgPathsCard from "../../imports/svg-0poidvn20z";
 import svgPathsExperiences from "../../imports/svg-2f58vant4f";
-import imgImageAsuAnalyticsInternshipProgram from "../../assets/28ad8738a7c34abe846a457acd0e47c176e373f8.png";
-import imgImageDataScienceClub from "../../assets/543c06e83342b4e46744bec27a24bf72648f41e5.png";
-import imgImageTableauStudentCertification from "../../assets/0d1d4c445429bd62c2ecc1c64433ae2e292654e8.png";
+import svgPathsSalary from "../../imports/svg-0xbavvj8od";
 import imgExperiencesHero from "../../assets/cfc8f873b14b01fec8391ecc6f3d56b991ce4011.png";
 import imgSectionProgramCourses from "../../assets/246706e29030f783e2d25b7656d4d29484ca9389.png";
 import { useState } from "react";
+import { useCards } from '../hooks/useCards';
 
 const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:8000';
 
@@ -25,6 +24,12 @@ export function CareerDetail() {
   const [ethicalDilemmasData, setEthicalDilemmasData] = useState<any>(null);
   const [isGeneratingEthicalDilemmas, setIsGeneratingEthicalDilemmas] = useState(false);
   const [jobOutlookData, setJobOutlookData] = useState<any>(null);
+
+  const { cards: degreeCards } = useCards(slug || '', 'degrees');
+  const { cards: experienceCards } = useCards(slug || '', 'experiences');
+  const { cards: resourceCards } = useCards(slug || '', 'resources');
+
+  const allExperienceCards = [...resourceCards, ...experienceCards];
 
   // Auto-fetch job outlook data on mount
   useState(() => {
@@ -61,8 +66,8 @@ export function CareerDetail() {
 
   // Degree visibility logic
   const initialDegreesToShow = 2;
-  const degreesToDisplay = showAllDegrees ? career.degrees : career.degrees.slice(0, initialDegreesToShow);
-  const remainingDegreeCount = career.degrees.length - initialDegreesToShow;
+  const degreesToDisplay = showAllDegrees ? degreeCards : degreeCards.slice(0, initialDegreesToShow);
+  const remainingDegreeCount = degreeCards.length - initialDegreesToShow;
 
   return (
     <div className="bg-[#f1f1f1]">
@@ -139,7 +144,7 @@ export function CareerDetail() {
                   {isGeneratingDayInLife ? 'Researching...' : 'Generate Real Day'}
                 </button>
               </div>
-              
+
               {/* Show AI-generated activities if available */}
               {dayInLifeData ? (
                 <div className="space-y-[24px]">
@@ -262,10 +267,10 @@ export function CareerDetail() {
                     <div className="flex items-center gap-[8px]">
                       <div className="flex gap-0">
                         <svg className="size-[15px]" fill="none" viewBox="0 0 15 12">
-                          <path d={svgPaths.p284c8f00} fill="#191919" />
+                          <path d={svgPathsSalary.p284c8f00} fill="#191919" />
                         </svg>
                         <svg className="size-[15px] -ml-[7.5px]" fill="none" viewBox="0 0 15 12">
-                          <path d={svgPaths.p284c8f00} fill="#191919" />
+                          <path d={svgPathsSalary.p284c8f00} fill="#191919" />
                         </svg>
                       </div>
                       <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#191919] leading-[24px]">
@@ -284,10 +289,10 @@ export function CareerDetail() {
                     <div className="flex items-center gap-[8px]">
                       <div className="flex gap-0">
                         <svg className="size-[15px]" fill="none" viewBox="0 0 15 12">
-                          <path d={svgPaths.p284c8f00} fill="#191919" />
+                          <path d={svgPathsSalary.p284c8f00} fill="#191919" />
                         </svg>
                         <svg className="size-[15px] -ml-[7.5px]" fill="none" viewBox="0 0 15 12">
-                          <path d={svgPaths.p284c8f00} fill="#191919" />
+                          <path d={svgPathsSalary.p284c8f00} fill="#191919" />
                         </svg>
                       </div>
                       <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#191919] leading-[24px]">
@@ -306,10 +311,10 @@ export function CareerDetail() {
                     <div className="flex items-center gap-[8px]">
                       <div className="flex gap-0">
                         <svg className="size-[15px]" fill="none" viewBox="0 0 15 12">
-                          <path d={svgPaths.p284c8f00} fill="#191919" />
+                          <path d={svgPathsSalary.p284c8f00} fill="#191919" />
                         </svg>
                         <svg className="size-[15px] -ml-[7.5px]" fill="none" viewBox="0 0 15 12">
-                          <path d={svgPaths.p284c8f00} fill="#191919" />
+                          <path d={svgPathsSalary.p284c8f00} fill="#191919" />
                         </svg>
                       </div>
                       <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#191919] leading-[24px]">
@@ -341,15 +346,20 @@ export function CareerDetail() {
           </p>
 
           <div className="space-y-[32px]">
+            {degreesToDisplay.length === 0 && (
+              <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#555] italic">
+                No degrees listed for this career yet. Check back later!
+              </p>
+            )}
             {degreesToDisplay.map((degree, index) => (
               <div key={index} className="flex bg-white border border-[#f1f1f1] relative">
                 {/* Left: Image */}
                 <div className="w-[292px] shrink-0 relative">
                   <div className="h-full absolute inset-0 overflow-hidden">
                     <img
-                      alt={degree.name}
+                      alt={degree.title}
                       className="absolute h-full left-0 max-w-none top-0 w-[167.53%] object-cover"
-                      src={degree.image_url}
+                      src={degree.image_url || 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1080'} // Fallback img
                     />
                   </div>
                 </div>
@@ -360,42 +370,21 @@ export function CareerDetail() {
                 {/* Right: Degree Content */}
                 <div className="flex-1 px-[32px] py-[33px] flex flex-col gap-[24px]">
                   {/* Title and School */}
-                  <div className="flex items-start justify-between h-[65.8px]">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-['Arial:Bold',sans-serif] text-[24px] text-[#191919] leading-[28.8px] tracking-[-0.6px] mb-[8px]">
-                        {degree.name}
+                        {degree.title}
                       </h3>
                       <p className="font-['Arial:Regular',sans-serif] text-[14px] text-[#555] leading-[21px]">
-                        {degree.school}
+                        {degree.description}
                       </p>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#191919] leading-[24px]">
-                    {degree.why}
-                  </p>
-
-                  {/* Courses */}
-                  <div className="border-t border-[#d0d0d0] pt-[24.8px] flex flex-col gap-[12px]">
-                    <p className="font-['Arial:Bold',sans-serif] text-[14px] text-[#191919] leading-[21px]">
-                      Courses that build key skills:
-                    </p>
-                    <div className="flex flex-wrap gap-[8px]">
-                      {degree.courses.slice(0, 3).map((course, idx) => (
-                        <div key={idx} className="bg-[#f5f5f5] rounded-[4px] px-[12px] pt-[6px] h-[31.5px]">
-                          <p className="font-['Arial:Regular',sans-serif] text-[13px] text-[#191919] leading-[19.5px]">
-                            {course.code} — {course.name}
-                          </p>
-                        </div>
-                      ))}
                     </div>
                   </div>
 
                   {/* CTA Button */}
                   <div className="border-t border-[#d0d0d0] pt-[24px]">
                     <a
-                      href={degree.url}
+                      href={degree.link_url || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block bg-[#ffc627] border border-[#ffc627] rounded-[804px] px-[17px] py-[9px] hover:bg-[#ffb600] transition-colors"
@@ -469,110 +458,27 @@ export function CareerDetail() {
             <div className="border-t border-[#d0d0d0] mb-[32px]" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[24px]">
-              {career.experiences.slice(0, 4).map((experience, index) => {
-                const getBadgeLabel = (icon: string) => {
-                  const badgeMap: Record<string, string> = {
-                    briefcase: "Internship",
-                    users: "Club",
-                    award: "Partnership",
-                    laptop: "Program",
-                    code: "Competition",
-                    trophy: "Competition",
-                    heart: "Volunteer",
-                    book: "Program",
-                    megaphone: "Organization",
-                    shield: "Club",
-                    globe: "Internship",
-                    newspaper: "Program",
-                    stethoscope: "Experience"
-                  };
-                  return badgeMap[icon] || "Program";
-                };
-
-                // Map experiences to unique photo types
-                const getExperienceImageUrl = (title: string, icon: string) => {
-                  const titleLower = title.toLowerCase();
-
-                  // Match by keywords in title
-                  if (titleLower.includes('internship') || titleLower.includes('student externship')) {
-                    return 'https://images.unsplash.com/photo-1758518731706-be5d5230e5a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMG1lZXRpbmclMjBkaXNjdXNzaW9uJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('club') || titleLower.includes('association') || titleLower.includes('society') || titleLower.includes('chapter')) {
-                    return 'https://images.unsplash.com/photo-1543269865-cbf427effbad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHVkZW50cyUyMGNvbGxhYm9yYXRpb24lMjB0ZWFtJTIwcHJvamVjdHxlbnwxfHx8fDE3NzE4MjgxOTd8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('certification') || titleLower.includes('certificate')) {
-                    return 'https://images.unsplash.com/photo-1760420940953-3958ad9f6287?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB3b3Jrc2hvcCUyMHRyYWluaW5nJTIwc2Vzc2lvbnxlbnwxfHx8fDE3NzE4MTcyNDR8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('lab') || titleLower.includes('research')) {
-                    return 'https://images.unsplash.com/photo-1758685734153-132c8620c1bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwc2NpZW5jZSUyMGV4cGVyaW1lbnQlMjBzdHVkZW50fGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('hackathon') || titleLower.includes('competition') || titleLower.includes('challenge')) {
-                    return 'https://images.unsplash.com/photo-1569653402334-2e98fbaa80ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21wdXRlciUyMGxhYiUyMHN0dWRlbnRzJTIwY29kaW5nfGVufDF8fHx8MTc3MTgyODE5OHww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('volunteer') || titleLower.includes('community') || titleLower.includes('outreach')) {
-                    return 'https://images.unsplash.com/photo-1760992003987-efc5259bcfbf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2b2x1bnRlZXIlMjBjb21tdW5pdHklMjBzZXJ2aWNlJTIwaGVscGluZ3xlbnwxfHx8fDE3NzE4MTE3MDN8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('clinic') || titleLower.includes('health') || titleLower.includes('medical') || titleLower.includes('nursing')) {
-                    return 'https://images.unsplash.com/photo-1710074213379-2a9c2653046a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwY2xpbmljJTIwaG9zcGl0YWwlMjBoZWFsdGhjYXJlfGVufDF8fHx8MTc3MTgyODIwMXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('classroom') || titleLower.includes('field experience') || titleLower.includes('teaching') || titleLower.includes('literacy')) {
-                    return 'https://images.unsplash.com/photo-1758270704925-fa59d93119c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjbGFzc3Jvb20lMjB0ZWFjaGluZyUyMGVkdWNhdGlvbiUyMHN0dWRlbnRzfGVufDF8fHx8MTc3MTgyODIwMXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('design') || titleLower.includes('ux') || titleLower.includes('aiga')) {
-                    return 'https://images.unsplash.com/photo-1758627506826-0658170e5cf6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkZXNpZ24lMjBzdHVkaW8lMjBjcmVhdGl2ZSUyMHdvcmtzcGFjZXxlbnwxfHx8fDE3NzE4MjgyMDJ8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('news') || titleLower.includes('journalism') || titleLower.includes('cronkite') || titleLower.includes('reporter')) {
-                    return 'https://images.unsplash.com/photo-1761319114926-ef932912fa37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsaWJyYXJ5JTIwc3R1ZHklMjByZXNlYXJjaCUyMGJvb2tzfGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('workshop') || titleLower.includes('seminar') || titleLower.includes('training')) {
-                    return 'https://images.unsplash.com/photo-1769798643237-8642a3fbe5bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25mZXJlbmNlJTIwbmV0d29ya2luZyUyMHBlb3BsZSUyMHByb2Zlc3Npb25hbHxlbnwxfHx8fDE3NzE4MjgyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('software factory') || titleLower.includes('open source') || titleLower.includes('github')) {
-                    return 'https://images.unsplash.com/photo-1569653402334-2e98fbaa80ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21wdXRlciUyMGxhYiUyMHN0dWRlbnRzJTIwY29kaW5nfGVufDF8fHx8MTc3MTgyODE5OHww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('marketing') || titleLower.includes('digital')) {
-                    return 'https://images.unsplash.com/photo-1758518731706-be5d5230e5a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMG1lZXRpbmclMjBkaXNjdXNzaW9uJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('sustainability') || titleLower.includes('environmental') || titleLower.includes('epa')) {
-                    return 'https://images.unsplash.com/photo-1763890763377-abd05301034d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYW1wdXMlMjBvdXRkb29yJTIwYWN0aXZpdGllcyUyMHN0dWRlbnRzfGVufDF8fHx8MTc3MTgyODIwMHww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (titleLower.includes('practicum') || titleLower.includes('placement')) {
-                    return 'https://images.unsplash.com/photo-1758270704925-fa59d93119c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjbGFzc3Jvb20lMjB0ZWFjaGluZyUyMGVkdWNhdGlvbiUyMHN0dWRlbnRzfGVufDF8fHx8MTc3MTgyODIwMXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-
-                  // Default fallback based on icon type
-                  if (icon === 'users' || icon === 'shield') {
-                    return 'https://images.unsplash.com/photo-1543269865-cbf427effbad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHVkZW50cyUyMGNvbGxhYm9yYXRpb24lMjB0ZWFtJTIwcHJvamVjdHxlbnwxfHx8fDE3NzE4MjgxOTd8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (icon === 'award') {
-                    return 'https://images.unsplash.com/photo-1760420940953-3958ad9f6287?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB3b3Jrc2hvcCUyMHRyYWluaW5nJTIwc2Vzc2lvbnxlbnwxfHx8fDE3NzE4MTcyNDR8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-                  if (icon === 'briefcase' || icon === 'globe') {
-                    return 'https://images.unsplash.com/photo-1758518731706-be5d5230e5a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMG1lZXRpbmclMjBkaXNjdXNzaW9uJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MTgyODE5OXww&ixlib=rb-4.1.0&q=80&w=1080';
-                  }
-
-                  // Final fallback
-                  return 'https://images.unsplash.com/photo-1769798643237-8642a3fbe5bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25mZXJlbmNlJTIwbmV0d29ya2luZyUyMHBlb3BsZSUyMHByb2Zlc3Npb25hbHxlbnwxfHx8fDE3NzE4MjgyMDB8MA&ixlib=rb-4.1.0&q=80&w=1080';
-                };
-
-                const badgeLabel = getBadgeLabel(experience.icon);
-                const imageUrl = getExperienceImageUrl(experience.title, experience.icon);
-
+              {allExperienceCards.length === 0 && (
+                <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#555] italic col-span-4">
+                  No related experiences listed yet. Check back later!
+                </p>
+              )}
+              {allExperienceCards.map((card, index) => {
                 return (
                   <div key={index} className="bg-white border border-[#d0d0d0] flex flex-col h-full">
                     {/* Image with Badge - NO fade overlay on cards */}
                     <div className="relative h-[186px] overflow-hidden shrink-0">
                       {/* Base Image */}
                       <img
-                        alt={experience.title}
+                        alt={card.title}
                         className="absolute inset-0 size-full object-cover"
-                        src={imageUrl}
+                        src={card.image_url || 'https://images.unsplash.com/photo-1769798643237-8642a3fbe5bc?w=1080'}
                       />
 
                       {/* Badge - Rectangular (no border-radius) */}
                       <div className="absolute top-[11px] right-[11px] bg-black px-[12px] pt-[8px] pb-[8px] z-10">
                         <p className="font-['Arial:Bold',sans-serif] text-[12px] text-white tracking-[-0.45px] leading-[21.6px] whitespace-nowrap">
-                          {badgeLabel}
+                          {card.tag}
                         </p>
                       </div>
                     </div>
@@ -580,18 +486,23 @@ export function CareerDetail() {
                     {/* Content - Fixed height for 2-line title + 3-line description */}
                     <div className="px-[16px] pt-[16px] pb-[16px] flex flex-col gap-[12px] h-[140px]">
                       <h3 className="font-['Arial:Bold',sans-serif] text-[18px] text-[#191919] tracking-[-0.45px] leading-[21.6px] min-h-[43.2px]">
-                        {experience.title}
+                        {card.title}
                       </h3>
                       <p className="font-['Arial:Regular',sans-serif] text-[12px] text-[#191919] leading-[16.8px] min-h-[50.4px]">
-                        {experience.description}
+                        {card.description}
                       </p>
                     </div>
 
                     {/* Footer */}
                     <div className="border-t border-[#d0d0d0] px-[20px] pt-[12px] pb-[12px] flex items-center justify-between mt-auto">
-                      <p className="font-['Arial:Regular',sans-serif] text-[16px] text-[#8c1d40] leading-[24px] underline decoration-solid">
+                      <a
+                        href={card.link_url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-['Arial:Regular',sans-serif] text-[16px] text-[#8c1d40] leading-[24px] underline decoration-solid hover:text-black"
+                      >
                         Learn more
-                      </p>
+                      </a>
                       <div className="bg-[#fafafa] border border-[#e8e8e8] rounded-[12px] flex items-center justify-center shrink-0 size-[24px]">
                         <svg className="size-[12px]" fill="none" viewBox="0 0 12 12">
                           <path d={svgPathsExperiences.p114b700} stroke="black" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.14248" />
@@ -681,7 +592,7 @@ export function CareerDetail() {
                 <h4 className="font-['Arial:Bold',sans-serif] text-[20px] text-[#ffc627] leading-[28px] mb-[16px]">
                   How we calculated this score
                 </h4>
-                
+
                 {/* Research Papers Card */}
                 <div className="bg-[rgba(255,255,255,0.05)] border-l-4 border-[#ffc627] p-[24px]">
                   <div className="flex items-start justify-between mb-[12px]">
