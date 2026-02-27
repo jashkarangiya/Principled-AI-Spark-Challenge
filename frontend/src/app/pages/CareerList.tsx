@@ -1,10 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
-import { careers, fields, fieldColors } from "../data/careers";
+import { fields, fieldColors } from "../data/careers";
 import { Grid3x3, List } from "lucide-react";
 import svgPaths from "../../imports/svg-jyswhic5yw";
 
+const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:8000';
+
 export function CareerList() {
+  const [careers, setCareers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [salaryRange, setSalaryRange] = useState<string[]>([]);
@@ -12,34 +16,47 @@ export function CareerList() {
   const [aiImpact, setAiImpact] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
+  // Fetch careers from API
+  useEffect(() => {
+    const fetchCareers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/careers`);
+        if (response.ok) {
+          const data = await response.json();
+          setCareers(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch careers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCareers();
+  }, []);
+  
   // Highlighted filters
   const [showHighGrowth, setShowHighGrowth] = useState(false);
   const [showHighSalary, setShowHighSalary] = useState(false);
 
   const filteredCareers = useMemo(() => {
+    if (loading) return [];
+    
     let filtered = careers.filter((career) => {
-      // Field filter
       if (selectedField && career.field !== selectedField) return false;
+      if (searchQuery && !career.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 
-      // Search filter
-      if (searchQuery && !career.career_title.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-
-      // Highlighted filters
       if (showHighGrowth) {
-        const growth = parseInt(career.growth_rate.replace(/[^0-9-]/g, ""));
+        const growth = parseInt((career.growth_rate || '').replace(/[^0-9-]/g, ""));
         if (growth < 15) return false;
       }
 
       if (showHighSalary) {
-        const medianSalary = parseInt(career.salary_median.replace(/[^0-9]/g, ""));
+        const medianSalary = parseInt((career.salary_median || '').replace(/[^0-9]/g, ""));
         if (medianSalary < 100000) return false;
       }
 
-      // Salary range filter
       if (salaryRange.length > 0) {
-        const medianSalary = parseInt(career.salary_median.replace(/[^0-9]/g, ""));
+        const medianSalary = parseInt((career.salary_median || '').replace(/[^0-9]/g, ""));
         const inRange = salaryRange.some((range) => {
           if (range === "under50") return medianSalary < 50000;
           if (range === "50-75") return medianSalary >= 50000 && medianSalary < 75000;
@@ -50,9 +67,8 @@ export function CareerList() {
         if (!inRange) return false;
       }
 
-      // Growth rate filter
       if (growthRate.length > 0) {
-        const growth = parseInt(career.growth_rate.replace(/[^0-9-]/g, ""));
+        const growth = parseInt((career.growth_rate || '').replace(/[^0-9-]/g, ""));
         const inRange = growthRate.some((range) => {
           if (range === "high") return growth >= 15;
           if (range === "medium") return growth >= 5 && growth < 15;
@@ -62,9 +78,8 @@ export function CareerList() {
         if (!inRange) return false;
       }
 
-      // AI impact filter
       if (aiImpact.length > 0) {
-        const risk = career.automation_risk_pct;
+        const risk = career.automation_risk_pct || 0;
         const inRange = aiImpact.some((range) => {
           if (range === "low") return risk < 25;
           if (range === "medium") return risk >= 25 && risk < 40;
@@ -78,7 +93,7 @@ export function CareerList() {
     });
 
     return filtered;
-  }, [selectedField, searchQuery, salaryRange, growthRate, aiImpact, showHighGrowth, showHighSalary]);
+  }, [careers, loading, selectedField, searchQuery, salaryRange, growthRate, aiImpact, showHighGrowth, showHighSalary]);
 
   const handleCheckboxChange = (
     setter: React.Dispatch<React.SetStateAction<string[]>>,
@@ -319,7 +334,11 @@ export function CareerList() {
             </div>
 
             {/* Career Cards Grid */}
-            {filteredCareers.length > 0 ? (
+            {loading ? (
+              <div className="bg-white p-[48px] text-center">
+                <p className="font-['Arial'] text-[16px] text-[#767676]">Loading careers...</p>
+              </div>
+            ) : filteredCareers.length > 0 ? (
               viewMode === "grid" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[34px]">
                   {filteredCareers.map((career) => {
@@ -336,7 +355,7 @@ export function CareerList() {
                         {/* Image */}
                         <div className="h-[156px] relative shrink-0 w-full">
                           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            <img alt={career.career_title} className="absolute h-[103.87%] left-0 max-w-none top-0 w-full object-cover" src={career.image_url} />
+                            <img alt={career.name} className="absolute h-[103.87%] left-0 max-w-none top-0 w-full object-cover" src={career.image_url} />
                           </div>
                           <div className="size-full" />
                         </div>
@@ -350,7 +369,7 @@ export function CareerList() {
                                   {/* Title */}
                                   <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
                                     <div className="flex flex-col font-['Arial:Bold',sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[#191919] text-[18px] tracking-[-0.4px] w-full">
-                                      <p className="leading-[19.2px] whitespace-pre-wrap">{career.career_title}</p>
+                                      <p className="leading-[19.2px] whitespace-pre-wrap">{career.name}</p>
                                     </div>
                                   </div>
 
@@ -473,7 +492,7 @@ export function CareerList() {
 
                               {/* Title */}
                               <h3 className="font-['Arial'] font-bold text-[20px] text-[#191919] mb-[8px] leading-[1.2]">
-                                {career.career_title}
+                                {career.name}
                               </h3>
 
                               {/* Yellow underline */}

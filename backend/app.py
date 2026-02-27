@@ -16,7 +16,9 @@ from dotenv import load_dotenv
 from day_in_life_agent import DayInLifeAgent
 from ethical_dilemmas_agent import EthicalDilemmasAgent
 from skills_research_agent import SkillsResearchAgent
+from job_outlook_agent import JobOutlookAgent
 from tavily_search import tavily_client
+from chatbot_agent import chatbot
 
 load_dotenv()
 
@@ -176,6 +178,7 @@ ai_client = AIClient()
 day_in_life_agent = DayInLifeAgent()
 ethical_dilemmas_agent = EthicalDilemmasAgent()
 skills_research_agent = SkillsResearchAgent()
+job_outlook_agent = JobOutlookAgent()
 cache = {}
 
 # Models
@@ -192,6 +195,13 @@ class EthicalDilemmasRequest(BaseModel):
 class SkillsResearchRequest(BaseModel):
     job_title: str
 
+class JobOutlookRequest(BaseModel):
+    job_title: str
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
 # Endpoints
 @app.get("/")
 def root():
@@ -200,6 +210,20 @@ def root():
         "ai_enabled": ai_client.enabled,
         "tavily_enabled": tavily_client.enabled
     }
+
+@app.get("/api/careers")
+def get_careers(session: Session = Depends(get_session)):
+    """Fetch all careers"""
+    careers = session.exec(select(Career)).all()
+    return careers
+
+@app.get("/api/careers/{slug}")
+def get_career(slug: str, session: Session = Depends(get_session)):
+    """Fetch a single career by slug"""
+    career = session.exec(select(Career).where(Career.slug == slug)).first()
+    if not career:
+        raise HTTPException(status_code=404, detail="Career not found")
+    return career
 
 @app.get("/api/cards")
 def get_cards(career_slug: str, section_slug: str, session: Session = Depends(get_session)):
@@ -248,15 +272,18 @@ def calculate_risk(request: AutomationRiskRequest):
     try:
         url = "https://api.semanticscholar.org/graph/v1/paper/search"
         params = {
-            'query': f"AI automation {request.job_title}",
+            'query': f'AI automation {request.job_title} job tasks',
             'limit': 10,
-            'fields': 'title,year'
+            'fields': 'title,year,abstract',
+            'year': '2020-'
         }
         response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:
-            papers = response.json().get('data', [])
-    except:
-        pass
+            data = response.json()
+            papers = data.get('data', [])
+            print(f"  ✓ Found {len(papers)} papers on AI automation for {request.job_title}")
+    except Exception as e:
+        print(f"  ⚠️  Semantic Scholar API error: {e}")
 
     # Identify AI tools
     tool_map = {
@@ -353,6 +380,24 @@ def research_skills(request: SkillsResearchRequest):
 
     result = skills_research_agent.generate(request.job_title)
     cache[cache_key] = result
+    return result
+
+@app.post("/api/research-job-outlook")
+def research_job_outlook(request: JobOutlookRequest):
+    """Research job growth and annual openings"""
+    cache_key = f"job_outlook:{request.job_title}"
+
+    if cache_key in cache:
+        return cache[cache_key]
+
+    result = job_outlook_agent.research(request.job_title)
+    cache[cache_key] = result
+    return result
+
+@app.post("/api/chat")
+def chat(request: ChatRequest, session: Session = Depends(get_session)):
+    """Chat with AI assistant about careers and resources"""
+    result = chatbot.chat(session, request.message)
     return result
 
 if __name__ == "__main__":
